@@ -3,22 +3,37 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ChatDB - SQL Query Interface</title>
+    <title>ChatDB - AI-Powered Query Interface</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </head>
 <body class="container mt-5">
-<h2 class="text-center">ChatDB - GPT Powered SQL Query Generator</h2>
+<h2 class="text-center">ChatDB - AI-Powered Query Interface</h2>
+
+<!-- Database Selection -->
+<div class="input-group mb-3">
+    <label class="input-group-text">Database:</label>
+    <select id="dbSelector" class="form-select">
+        <option value="postgres">PostgreSQL</option>
+        <option value="mongo">MongoDB</option>
+    </select>
+</div>
 
 <!-- GPT Natural Language Query Input -->
 <div class="input-group mb-3">
-    <input type="text" id="gptQueryInput" class="form-control" placeholder="Enter natural language query">
+    <input type="text" id="gptQueryInput" class="form-control" placeholder="Enter a natural language query">
     <button class="btn btn-success" onclick="executeGPTQuery()">Generate & Execute</button>
 </div>
 
-<!-- Display Generated SQL Query -->
-<h5>Generated SQL Query:</h5>
+<!-- Display Generated SQL/Mongo Query -->
+<h5>Generated Query:</h5>
 <pre id="generatedQuery" class="border p-2"></pre>
+
+<!-- SQL/Mongo Query Input -->
+<div class="input-group mb-3">
+    <input type="text" id="queryInput" class="form-control" placeholder="Enter SQL Query or MongoDB Command">
+    <button class="btn btn-primary" onclick="executeQuery()">Run Query</button>
+</div>
 
 <!-- Collapsible Results Section -->
 <div class="accordion" id="resultsAccordion">
@@ -42,21 +57,38 @@
 <script>
     async function executeGPTQuery() {
         let userQuery = document.getElementById("gptQueryInput").value;
+        let dbType = document.getElementById("dbSelector").value;
 
         let response = await fetch("/api/gpt-query/generate-and-execute", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ query: userQuery })
+            body: JSON.stringify({ query: userQuery, database: dbType })
         });
 
         let data = await response.json();
-        document.getElementById("generatedQuery").textContent = data.generatedQuery || "No SQL Query Generated";
+        document.getElementById("generatedQuery").textContent = data.generatedQuery || "No Query Generated";
 
         if (data.results) {
             displayResults(data.results);
         } else {
             document.getElementById("resultsBody").innerHTML = "<tr><td colspan='100%' class='text-center'>No results found</td></tr>";
         }
+    }
+
+    async function executeQuery() {
+        let dbType = document.getElementById("dbSelector").value;
+        let query = document.getElementById("queryInput").value;
+
+        let url = dbType === "postgres" ? "/api/query/execute" : "/api/mongo/execute";
+
+        let response = await fetch(url, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ query: query })
+        });
+
+        let data = await response.json();
+        displayResults(data);
     }
 
     function displayResults(data) {
