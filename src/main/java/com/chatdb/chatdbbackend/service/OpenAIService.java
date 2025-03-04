@@ -22,13 +22,18 @@ public class OpenAIService {
     private final OkHttpClient client = new OkHttpClient();
     private final ObjectMapper objectMapper = new ObjectMapper();
 
-    public String generateSQLQuery(String userQuery) throws IOException {
-        logger.info("🔍 Received user query: " + userQuery);
+    public String generateQuery(String userQuery, String dbType) throws IOException {
+        logger.info("🔍 Received user query: " + userQuery + " for database: " + dbType);
+
+        // Define system prompt based on database type
+        String systemPrompt = dbType.equalsIgnoreCase("mongo") ?
+                "You are an AI that converts natural language into MongoDB shell queries. Generate only the valid MongoDB query." :
+                "You are an AI that converts natural language into SQL queries. Generate only the valid SQL query.";
 
         String jsonRequest = objectMapper.writeValueAsString(Map.of(
                 "model", "gpt-4",
                 "messages", new Object[]{
-                        Map.of("role", "system", "content", "You are an AI that generates SQL queries from natural language."),
+                        Map.of("role", "system", "content", systemPrompt),
                         Map.of("role", "user", "content", userQuery)
                 }
         ));
@@ -51,16 +56,9 @@ public class OpenAIService {
             String responseBody = response.body().string();
             logger.info("📥 OpenAI Response: " + responseBody);
 
-            // Extract SQL query from OpenAI's JSON response
+            // Extract query from OpenAI response
             Map<String, Object> result = objectMapper.readValue(responseBody, Map.class);
-            String generatedSQL = ((Map<String, String>) ((Map<String, Object>) ((java.util.List<?>) result.get("choices")).get(0)).get("message")).get("content");
-
-            logger.info("✅ Extracted SQL Query: " + generatedSQL);
-            return generatedSQL;
-
-        } catch (Exception e) {
-            logger.severe("⚠️ Error while processing OpenAI response: " + e.getMessage());
-            throw e;
+            return ((Map<String, String>) ((Map<String, Object>) ((java.util.List<?>) result.get("choices")).get(0)).get("message")).get("content");
         }
     }
 }

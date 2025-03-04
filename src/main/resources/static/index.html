@@ -3,12 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ChatDB - AI-Powered Query Interface</title>
+    <title>ChatDB - AI Query Generator</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </head>
 <body class="container mt-5">
-<h2 class="text-center">ChatDB - AI-Powered Query Interface</h2>
+<h2 class="text-center">ChatDB - AI Query Generator</h2>
 
 <!-- Database Selection -->
 <div class="input-group mb-3">
@@ -22,28 +22,22 @@
 <!-- GPT Natural Language Query Input -->
 <div class="input-group mb-3">
     <input type="text" id="gptQueryInput" class="form-control" placeholder="Enter a natural language query">
-    <button class="btn btn-success" onclick="executeGPTQuery()">Generate & Execute</button>
+    <button class="btn btn-success" onclick="generateAndExecuteQuery()">Generate & Execute</button>
 </div>
 
-<!-- Display Generated SQL/Mongo Query -->
+<!-- Display Generated Query -->
 <h5>Generated Query:</h5>
 <pre id="generatedQuery" class="border p-2"></pre>
-
-<!-- SQL/Mongo Query Input -->
-<div class="input-group mb-3">
-    <input type="text" id="queryInput" class="form-control" placeholder="Enter SQL Query or MongoDB Command">
-    <button class="btn btn-primary" onclick="executeQuery()">Run Query</button>
-</div>
 
 <!-- Collapsible Results Section -->
 <div class="accordion" id="resultsAccordion">
     <div class="accordion-item">
-        <h2 class="accordion-header" id="headingOne">
-            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseResults" aria-expanded="false" aria-controls="collapseResults">
+        <h2 class="accordion-header">
+            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseResults">
                 Query Results
             </button>
         </h2>
-        <div id="collapseResults" class="accordion-collapse collapse" aria-labelledby="headingOne" data-bs-parent="#resultsAccordion">
+        <div id="collapseResults" class="accordion-collapse collapse">
             <div class="accordion-body">
                 <table class="table table-bordered table-striped">
                     <thead id="resultsHead"></thead>
@@ -55,7 +49,7 @@
 </div>
 
 <script>
-    async function executeGPTQuery() {
+    async function generateAndExecuteQuery() {
         let userQuery = document.getElementById("gptQueryInput").value;
         let dbType = document.getElementById("dbSelector").value;
 
@@ -68,17 +62,14 @@
         let data = await response.json();
         document.getElementById("generatedQuery").textContent = data.generatedQuery || "No Query Generated";
 
-        if (data.results) {
-            displayResults(data.results);
+        if (data.generatedQuery) {
+            executeGeneratedQuery(data.generatedQuery, dbType);
         } else {
-            document.getElementById("resultsBody").innerHTML = "<tr><td colspan='100%' class='text-center'>No results found</td></tr>";
+            alert("Query generation failed.");
         }
     }
 
-    async function executeQuery() {
-        let dbType = document.getElementById("dbSelector").value;
-        let query = document.getElementById("queryInput").value;
-
+    async function executeGeneratedQuery(query, dbType) {
         let url = dbType === "postgres" ? "/api/query/execute" : "/api/mongo/execute";
 
         let response = await fetch(url, {
@@ -98,7 +89,7 @@
         resultsHead.innerHTML = "";
         resultsBody.innerHTML = "";
 
-        if (data.length === 0) {
+        if (!data || data.length === 0) {
             resultsBody.innerHTML = "<tr><td colspan='100%' class='text-center'>No results found</td></tr>";
             return;
         }
@@ -108,7 +99,7 @@
         resultsHead.innerHTML = headerRow;
 
         data.forEach(row => {
-            let rowHTML = "<tr>" + headers.map(h => `<td>${row[h]}</td>`).join('') + "</tr>";
+            let rowHTML = "<tr>" + headers.map(h => `<td>${row[h] || ''}</td>`).join('') + "</tr>";
             resultsBody.innerHTML += rowHTML;
         });
 
@@ -116,6 +107,7 @@
         let bsCollapse = new bootstrap.Collapse(collapseElement, { toggle: false });
         bsCollapse.show();
     }
+
 </script>
 </body>
 </html>
