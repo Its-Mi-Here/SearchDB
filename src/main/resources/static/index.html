@@ -49,6 +49,10 @@
 </div>
 
 <script>
+    document.addEventListener("DOMContentLoaded", function () {
+        initialDisplay(); // Call initialDisplay on page load
+    });
+
     async function generateAndExecuteQuery() {
         let userQuery = document.getElementById("gptQueryInput").value;
         let dbType = document.getElementById("dbSelector").value;
@@ -62,6 +66,18 @@
         let data = await response.json();
         document.getElementById("generatedQuery").textContent = data.generatedQuery || "No Query Generated";
         displayResults(data.results);
+    }
+
+    async function initialDisplay() {
+        let response = await fetch("/api/gpt-query/", {
+            method: "GET",
+            headers: { "Content-Type": "application/json" }
+        });
+
+        let data = await response.json();
+        console.log("Initial Display Data:", data); // Debugging log
+
+        displayResults(data.results); // Ensure the results are displayed in the table
     }
 
     function displayResults(data) {

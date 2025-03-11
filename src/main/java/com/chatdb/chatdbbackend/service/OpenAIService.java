@@ -1,13 +1,18 @@
 package com.chatdb.chatdbbackend.service;
+import com.chatdb.chatdbbackend.model.Employees;
+import com.chatdb.chatdbbackend.repo.EmployeeRepo;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.logging.Logger;
+import java.util.stream.Collectors;
+
 import okhttp3.*;
 import org.springframework.jdbc.core.JdbcTemplate;
 
@@ -31,6 +36,24 @@ public class OpenAIService {
 
     @Autowired
     private JdbcTemplate jdbcTemplate;
+
+    @Autowired
+    EmployeeRepo repo;
+
+    public Map<String, Object> startUpDisplay() {
+        Map<String, Object> response = new HashMap<>();
+
+        try {
+            List<Employees> employeesList = repo.findAll(); // Fetch all employees
+            response.put("status", "success");
+            response.put("results", employeesList);
+        } catch (Exception e) {
+            response.put("status", "error");
+            response.put("message", "Failed to fetch employees: " + e.getMessage());
+        }
+
+        return response;
+    }
 
     public Map<String, Object> generateAndExecute(Map<String, String> request) {
         String userQuery = request.get("query");
@@ -60,7 +83,7 @@ public class OpenAIService {
     }
 
     public String generateQuery(String userQuery, String dbType) throws IOException {
-        logger.info("🔍 Received user query: " + userQuery + " for database: " + dbType);
+        logger.info("Received user query: " + userQuery + " for database: " + dbType);
 
         // Define system prompt based on database type
         String systemPrompt = dbType.equalsIgnoreCase("mongo") ?
@@ -75,7 +98,7 @@ public class OpenAIService {
                 }
         ));
 
-        logger.info("📤 Sending request to OpenAI: " + jsonRequest);
+        logger.info("Sending request to OpenAI: " + jsonRequest);
 
         RequestBody body = RequestBody.create(jsonRequest, MediaType.get("application/json"));
         Request request = new Request.Builder()
@@ -86,16 +109,16 @@ public class OpenAIService {
 
         try (Response response = client.newCall(request).execute()) {
             if (!response.isSuccessful()) {
-                logger.severe("❌ OpenAI API Error: " + response.code() + " - " + response.message());
+                logger.severe("OpenAI API Error: " + response.code() + " - " + response.message());
                 throw new IOException("Unexpected OpenAI API response: " + response);
             }
 
             String responseBody = response.body().string();
-            logger.info("📥 OpenAI Response: " + responseBody);
+            logger.info("OpenAI Response: " + responseBody);
 
             // Extract query from OpenAI response
             Map<String, Object> result = objectMapper.readValue(responseBody, Map.class);
-            return ((Map<String, String>) ((Map<String, Object>) ((java.util.List<?>) result.get("choices")).get(0)).get("message")).get("content");
+            return ((Map<String, String>) ((Map<String, Object>) ((List<?>) result.get("choices")).get(0)).get("message")).get("content");
         }
     }
 }
