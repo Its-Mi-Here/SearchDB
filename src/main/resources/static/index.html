@@ -53,33 +53,15 @@
         let userQuery = document.getElementById("gptQueryInput").value;
         let dbType = document.getElementById("dbSelector").value;
 
-        let response = await fetch("/api/gpt-query/generate-and-execute", {
+        let response = await fetch("/api/gpt-query/generate-and-execute-query", {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ query: userQuery, database: dbType })
+            headers: {"Content-Type": "application/json"},
+            body: JSON.stringify({query: userQuery, database: dbType})
         });
 
         let data = await response.json();
         document.getElementById("generatedQuery").textContent = data.generatedQuery || "No Query Generated";
-
-        if (data.generatedQuery) {
-            executeGeneratedQuery(data.generatedQuery, dbType);
-        } else {
-            alert("Query generation failed.");
-        }
-    }
-
-    async function executeGeneratedQuery(query, dbType) {
-        let url = dbType === "postgres" ? "/api/query/execute" : "/api/mongo/execute";
-
-        let response = await fetch(url, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ query: query })
-        });
-
-        let data = await response.json();
-        displayResults(data);
+        displayResults(data.results);
     }
 
     function displayResults(data) {

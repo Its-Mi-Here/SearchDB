@@ -1,22 +1,35 @@
 package com.chatdb.chatdbbackend.controller;
-import com.chatdb.chatdbbackend.model.QueryRequest;
 
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.jdbc.core.JdbcTemplate;
+import com.chatdb.chatdbbackend.service.OpenAIService;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
 import java.util.Map;
 
 @RestController
-@RequestMapping("/api/query")
+@RequestMapping("/api/gpt-query")
 @CrossOrigin(origins = "*")
-public class QueryController {
-    @Autowired
-    private JdbcTemplate jdbcTemplate;
 
-    @PostMapping("/execute")
-    public List<Map<String, Object>> executeQuery(@RequestBody QueryRequest request) {
-        return jdbcTemplate.queryForList(request.getQuery());
+public class QueryController {
+
+    private OpenAIService openAIService;
+    public QueryController(OpenAIService openAIService) {
+        this.openAIService = openAIService;
+    }
+
+    @PostMapping("/generate-and-execute-query")
+    public ResponseEntity<Map<String, Object>> generateAndExecuteQuery(@RequestBody Map<String, String> request){
+        Map<String, Object> response = openAIService.generateAndExecute(request);
+
+        try {
+            ObjectMapper objectMapper = new ObjectMapper();
+            String jsonOutput = objectMapper.writeValueAsString(response);
+            System.out.println("Backend JSON Response: " + jsonOutput);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        return ResponseEntity.ok(response);
     }
 }

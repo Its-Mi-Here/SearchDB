@@ -1,13 +1,12 @@
 package com.chatdb.chatdbbackend.service;
 
 import com.mongodb.client.MongoClient;
-import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
 import org.bson.Document;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.util.List;
+import java.util.*;
 import java.util.logging.Logger;
 
 @Service
@@ -45,52 +44,61 @@ public class MongoDBService {
         }
     }
 
-    private Object executeInsertOne(String query, MongoDatabase database) {
+    private List<Map<String, Object>> executeInsertOne(String query, MongoDatabase database) {
         String collectionName = extractCollectionName(query);
         Document document = extractJsonFromQuery(query);
         database.getCollection(collectionName).insertOne(document);
-        return "Inserted successfully into " + collectionName;
+
+        return generateSuccessResponse("Inserted successfully into " + collectionName);
     }
 
-    private Object executeInsertMany(String query, MongoDatabase database) {
+    private List<Map<String, Object>> executeInsertMany(String query, MongoDatabase database) {
         String collectionName = extractCollectionName(query);
         List<Document> documents = extractJsonArrayFromQuery(query);
         database.getCollection(collectionName).insertMany(documents);
-        return "Inserted multiple documents into " + collectionName;
+
+        return generateSuccessResponse("Inserted multiple documents into " + collectionName);
     }
 
-    private Object executeFind(String query, MongoDatabase database) {
+    private List<Map<String, Object>> executeFind(String query, MongoDatabase database) {
         String collectionName = extractCollectionName(query);
         Document filter = extractJsonFromQuery(query);
-        return database.getCollection(collectionName).find(filter).into(new java.util.ArrayList<>());
+        List<Map<String, Object>> results = new ArrayList<>();
+
+        for (Document doc : database.getCollection(collectionName).find(filter)) {
+            results.add(docToMap(doc));
+        }
+
+        return results;
     }
 
-    private Object executeAggregate(String query, MongoDatabase database) {
+    private List<Map<String, Object>> executeAggregate(String query, MongoDatabase database) {
         String collectionName = extractCollectionName(query);
         List<Document> pipeline = extractJsonArrayFromQuery(query);
-        return database.getCollection(collectionName).aggregate(pipeline).into(new java.util.ArrayList<>());
+        List<Map<String, Object>> results = new ArrayList<>();
+
+        for (Document doc : database.getCollection(collectionName).aggregate(pipeline)) {
+            results.add(docToMap(doc));
+        }
+
+        return results;
     }
 
-    private Object executeDeleteOne(String query, MongoDatabase database) {
+    private List<Map<String, Object>> executeDeleteOne(String query, MongoDatabase database) {
         String collectionName = extractCollectionName(query);
         Document filter = extractJsonFromQuery(query);
         database.getCollection(collectionName).deleteOne(filter);
-        return "Deleted one document from " + collectionName;
+
+        return generateSuccessResponse("Deleted one document from " + collectionName);
     }
 
-//    private Object executeUpdateOne(String query, MongoDatabase database) {
-//        String collectionName = extractCollectionName(query);
-//        Document updateQuery = extractJsonFromQuery(query);
-//        database.getCollection(collectionName).updateOne(updateQuery, updateQuery);
-//        return "Updated one document in " + collectionName;
-//    }
-    private Object executeUpdateOne(String query, MongoDatabase database) {
+    private List<Map<String, Object>> executeUpdateOne(String query, MongoDatabase database) {
         String collectionName = extractCollectionName(query);
 
         // Extract filter condition and update operation
         String[] parts = query.split("\\),\\s*\\{");
         if (parts.length < 2) {
-            return "Invalid updateOne syntax. Expected format: db.collection.updateOne({filter}, {update})";
+            return generateErrorResponse("Invalid updateOne syntax. Expected format: db.collection.updateOne({filter}, {update})");
         }
 
         String filterJson = parts[0].substring(parts[0].indexOf("(") + 1).trim();
@@ -100,9 +108,9 @@ public class MongoDBService {
         Document update = Document.parse(updateJson);
 
         database.getCollection(collectionName).updateOne(filter, update);
-        return "Updated one document in " + collectionName;
-    }
 
+        return generateSuccessResponse("Updated one document in " + collectionName);
+    }
 
     private String extractCollectionName(String query) {
         return query.split("\\.")[1].split("\\(")[0];
@@ -116,5 +124,35 @@ public class MongoDBService {
     private List<Document> extractJsonArrayFromQuery(String query) {
         String jsonArray = query.substring(query.indexOf("[") + 1, query.lastIndexOf("]"));
         return List.of(Document.parse("[" + jsonArray + "]"));
+    }
+
+    private Map<String, Object> docToMap(Document doc) {
+        if (doc == null) return Collections.emptyMap();
+
+        Map<String, Object> map = new HashMap<>(doc);
+
+        if (map.containsKey("_id") && map.get("_id") instanceof org.bson.types.ObjectId) {
+            map.put("_id", map.get("_id").toString());
+        }
+
+        return map;
+    }
+
+    private List<Map<String, Object>> generateSuccessResponse(String message) {
+        List<Map<String, Object>> response = new ArrayList<>();
+        Map<String, Object> result = new HashMap<>();
+        result.put("status", "success");
+        result.put("message", message);
+        response.add(result);
+        return response;
+    }
+
+    private List<Map<String, Object>> generateErrorResponse(String message) {
+        List<Map<String, Object>> response = new ArrayList<>();
+        Map<String, Object> result = new HashMap<>();
+        result.put("status", "error");
+        result.put("message", message);
+        response.add(result);
+        return response;
     }
 }
