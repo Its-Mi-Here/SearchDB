@@ -34,6 +34,21 @@ public class QueryController {
 
     };
 
+    @PostMapping("/add-entry-to-db")
+    public ResponseEntity<Map<String, Object>> addEntryToDB(@RequestBody Map<String, Object> entry) {
+        Map<String, Object> response = openAIService.addEntryToDB(entry);
+
+        try {
+            ObjectMapper objectMapper = new ObjectMapper();
+            String jsonOutput = objectMapper.writeValueAsString(response);
+            System.out.println("Backend JSON Response: " + jsonOutput);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        return ResponseEntity.ok(response);
+    }
+
     @PostMapping("/generate-and-execute-query")
     public ResponseEntity<Map<String, Object>> generateAndExecuteQuery(@RequestBody Map<String, String> request){
         Map<String, Object> response = openAIService.generateAndExecute(request);

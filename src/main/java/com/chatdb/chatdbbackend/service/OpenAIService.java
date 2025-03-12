@@ -7,6 +7,8 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -54,6 +56,37 @@ public class OpenAIService {
 
         return response;
     }
+
+    public Map<String, Object> addEntryToDB(Map<String, Object> entry) {
+        Map<String, Object> response = new HashMap<>();
+        System.out.println("Entry: " + entry);
+
+        try{
+            Employees employee = new Employees();
+//            employee.setEmployee_id((Integer) entry.get("id") );
+            employee.setFirst_name((String) entry.get("first_name") );
+            employee.setLast_name((String) entry.get("last_name") );
+            employee.setEmail((String) entry.get("email") );
+            employee.setJob_title( (String) entry.get("job_title") );
+
+            String hireDateString = (String) entry.get("hire_date");
+            SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
+            Date hireDate = dateFormat.parse(hireDateString);
+            employee.setHire_date(hireDate);
+            repo.save(employee);
+
+            List<Employees> employeesList = repo.findAll(); // Fetch all employees
+            response.put("status", "success");
+            response.put("results", employeesList);
+        }
+        catch(Exception e){
+            System.out.println(e.getMessage());
+            response.put("status", "error");
+            response.put("message", "Failed to add employee: " + e.getMessage());
+        }
+        return response;
+    }
+
 
     public Map<String, Object> generateAndExecute(Map<String, String> request) {
         String userQuery = request.get("query");

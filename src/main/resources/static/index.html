@@ -25,6 +25,51 @@
     <button class="btn btn-success" onclick="generateAndExecuteQuery()">Generate & Execute</button>
 </div>
 
+<!-- Add Entry Button -->
+<button class="btn btn-primary mb-3" data-bs-toggle="modal" data-bs-target="#addEntryModal">Add Entry</button>
+
+<!-- Add Entry Modal -->
+<div class="modal fade" id="addEntryModal" tabindex="-1" aria-labelledby="addEntryModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="addEntryModalLabel">Add Employee Entry</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="addEntryForm">
+<!--                    <div class="mb-3">-->
+<!--                        <label for="employeeId" class="form-label">Employee ID</label>-->
+<!--                        <input type="number" class="form-control" id="employeeId" required>-->
+<!--                    </div>-->
+                    <div class="mb-3">
+                        <label for="firstName" class="form-label">First Name</label>
+                        <input type="text" class="form-control" id="firstName" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="lastName" class="form-label">Last Name</label>
+                        <input type="text" class="form-control" id="lastName" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="email" class="form-label">Email</label>
+                        <input type="email" class="form-control" id="email" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="jobTitle" class="form-label">Job Title</label>
+                        <input type="text" class="form-control" id="jobTitle" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="hireDate" class="form-label">Hire Date</label>
+                        <input type="date" class="form-control" id="hireDate" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Add Employee</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+
 <!-- Display Generated Query -->
 <h5>Generated Query:</h5>
 <pre id="generatedQuery" class="border p-2"></pre>
@@ -49,8 +94,44 @@
 </div>
 
 <script>
+    // document.addEventListener("DOMContentLoaded", function () {
+    //     initialDisplay(); // Call initialDisplay on page load
+    // });
     document.addEventListener("DOMContentLoaded", function () {
         initialDisplay(); // Call initialDisplay on page load
+
+        // Form submission handler for adding employee
+        document.getElementById("addEntryForm").addEventListener("submit", async function(event) {
+            event.preventDefault();
+
+            let newEntry = {
+                // id: parseInt(document.getElementById("employeeId").value),
+                first_name: document.getElementById("firstName").value,
+                last_name: document.getElementById("lastName").value,
+                email: document.getElementById("email").value,
+                job_title: document.getElementById("jobTitle").value,
+                hire_date: document.getElementById("hireDate").value
+            };
+
+            let response = await fetch("/api/gpt-query/add-entry-to-db", {
+                method: "POST",
+                headers: {"Content-Type": "application/json"},
+                body: JSON.stringify(newEntry)
+            });
+
+            let data = await response.json();
+
+            if (data.status === "success") {
+                alert("Employee added successfully!");
+                // Close the modal
+                let modal = bootstrap.Modal.getInstance(document.getElementById('addEntryModal'));
+                modal.hide();
+                // Optionally, refresh the table or do other UI updates
+                initialDisplay();
+            } else {
+                alert("Error adding employee: " + data.message);
+            }
+        });
     });
 
     async function generateAndExecuteQuery() {
