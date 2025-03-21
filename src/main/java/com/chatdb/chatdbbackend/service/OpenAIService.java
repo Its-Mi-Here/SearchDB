@@ -3,6 +3,7 @@ package com.chatdb.chatdbbackend.service;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import okhttp3.*;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
@@ -21,6 +22,7 @@ public class OpenAIService {
     private final OkHttpClient client = new OkHttpClient();
     private final ObjectMapper objectMapper = new ObjectMapper();
 
+    @Cacheable(value = "openAiQueries", key = "#userQuery + '-' + #dbType")
     public String generateQuery(String userQuery, String dbType) throws IOException {
         System.out.println("Received user query: " + userQuery + " for database: " + dbType);
 
