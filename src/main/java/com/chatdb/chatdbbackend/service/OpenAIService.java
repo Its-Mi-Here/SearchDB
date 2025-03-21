@@ -42,6 +42,9 @@ public class OpenAIService {
     @Autowired
     EmployeeRepo repo;
 
+    @Autowired
+    private KafkaProducerService kafkaProducerService;
+
     public Map<String, Object> startUpDisplay() {
         Map<String, Object> response = new HashMap<>();
 
@@ -78,6 +81,9 @@ public class OpenAIService {
             List<Employees> employeesList = repo.findAll(); // Fetch all employees
             response.put("status", "success");
             response.put("results", employeesList);
+
+            kafkaProducerService.publishEntryToDB("Notification: User added - {name: "+ entry.get("first_name") + " " + entry.get("last_name") + "}" );
+
         }
         catch(Exception e){
             System.out.println(e.getMessage());

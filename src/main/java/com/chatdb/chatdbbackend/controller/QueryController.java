@@ -1,7 +1,9 @@
 package com.chatdb.chatdbbackend.controller;
 
+import com.chatdb.chatdbbackend.service.KafkaProducerService;
 import com.chatdb.chatdbbackend.service.OpenAIService;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -14,10 +16,13 @@ import java.util.Map;
 
 public class QueryController {
 
-    private OpenAIService openAIService;
-    public QueryController(OpenAIService openAIService) {
+    private final OpenAIService openAIService;
+    private final KafkaProducerService producerService;
+    public QueryController(OpenAIService openAIService, KafkaProducerService producerService) {
         this.openAIService = openAIService;
+        this.producerService = producerService;
     }
+
 
     @GetMapping("/")
     public ResponseEntity<Map<String, Object>>  initialDisplay() {
@@ -45,7 +50,8 @@ public class QueryController {
         } catch (Exception e) {
             e.printStackTrace();
         }
-
+//        producerService.publishEntryToDB("Entry added to the database: notification via new topic- db-entry!" );
+//        producerService.publishMessage("Entry added to db - via topic my-topic");
         return ResponseEntity.ok(response);
     }
 
